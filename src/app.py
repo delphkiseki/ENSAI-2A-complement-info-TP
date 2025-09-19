@@ -2,7 +2,14 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict
 
+from dao.attack_dao import AttackDao
+from dao.pokemon_dao import PokemonDao
+
 app = FastAPI()
+
+class PokemonModel(BaseModel):
+    name: str
+    level: int
 
 
 @app.get("/hello")
@@ -60,9 +67,29 @@ def delete_character(character_id: int):
     deleted_character = characters_db.pop(character_id)
     return deleted_character
 
+@app.get("/attack/")
+async def get_all_attacks(limit: int = 1000000):
+    """GET /attack/"""
+    return AttackDao().find_all_attacks(limit)
+
+@app.get("/pokemon/")
+async def get_all_pokemons(limit: int = 1000000):
+    liste_pokemons = PokemonDao().find_all(limit)
+
+    # Convert all pokemons using the model
+    liste_model = []
+    for pokemon in liste_pokemons:
+        liste_model.append(PokemonModel(name=pokemon.name, level=pokemon.level))
+
+    return liste_model
+
+@app.get("/pokemon/{name}")
+async def get_pokemon_by_name(name:str):
+    """GET /pokemon/<name>"""
+    return PokemonDao().find_pokemon_by_name(name)
 
 # Run the FastAPI application
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=80)
+    uvicorn.run(app, host="0.0.0.0", port=5432)
